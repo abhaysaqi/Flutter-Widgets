@@ -1,0 +1,50 @@
+import 'dart:convert';
+import 'dart:developer';
+import 'package:http/http.dart' as http;
+
+class Suggestion {
+  final String placeId;
+  final String description;
+
+  Suggestion({required this.placeId, required this.description});
+}
+
+class PlaceApiProvider {
+  final sessionToken;
+  final String apiKey = 'AIzaSyANuwlJlwaii7zx81I_sURvDRMzhPI20xo'; // Replace
+
+  PlaceApiProvider(this.sessionToken);
+
+  Future<List<Suggestion>> fetchSuggestions(String input, String lang) async {
+    final request =
+        'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$input&language=$lang&key=$apiKey&sessiontoken=$sessionToken';
+
+    final response = await http.get(Uri.parse(request));
+    try {
+      if (response.statusCode == 200) {
+        final result = json.decode(response.body);
+        log("REsult" + result.toString());
+        if (result['status'] == 'OK') {
+          final resultData =
+              (result['predictions'] as List)
+                  .map(
+                    (p) => Suggestion(
+                      placeId: p['place_id'],
+                      description: p['description'],
+                    ),
+                  )
+                  .toList();
+          log("Result data" + resultData.toString());
+          return resultData;
+        } else {
+          throw Exception(result['error_message']);
+        }
+      } else {
+        throw Exception('Failed to fetch suggestions');
+      }
+    } catch (e) {
+      log(e.toString());
+      return [];
+    }
+  }
+}
